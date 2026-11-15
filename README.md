@@ -1,3 +1,5 @@
+> **Navegador mobile:** esta branch inclui controles para toque e layout adaptável. Veja [compilação, hospedagem e limites](docs/mobile-browser.md). A [versão APK permanece no fork Android](https://github.com/vinKe005/photocraft-mb/tree/android/native-apk).
+
 <p align="center">
   <a href="https://getartcraft.com/">
     <picture>

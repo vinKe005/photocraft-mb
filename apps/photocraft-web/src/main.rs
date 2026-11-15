@@ -22,6 +22,9 @@
 mod diagnostics;
 
 #[cfg(any(target_arch = "wasm32", test))]
+mod mobile;
+
+#[cfg(any(target_arch = "wasm32", test))]
 mod preset_bridge;
 
 #[cfg(target_arch = "wasm32")]

@@ -49,6 +49,7 @@ type Served = Arc<Mutex<ServedFonts>>;
 
 pub fn start() {
     eframe::WebLogger::init(log::LevelFilter::Info).ok();
+    follow_visual_viewport();
     wasm_bindgen_futures::spawn_local(async {
         let Some(document) = web_sys::window().and_then(|w| w.document()) else {
             log::error!("no document");
@@ -103,6 +104,7 @@ pub fn start() {
                     preset_warnings.extend(warnings);
                     let drag = listen_drag(&pen_target);
                     let mut app = PhotocraftApp::new(session, services(inbox.clone(), place_inbox.clone(), drag_pos_service(pen_target.clone(), drag)));
+                    app.ui.mobile.enabled = mobile_layout();
                     if !preset_warnings.is_empty() {
                         photocraft_ui_egui::notices::post(&mut app, i18n::t("Some brush presets could not be loaded"), preset_warnings, true, None);
                     }
@@ -278,6 +280,42 @@ fn query() -> String {
     web_sys::window().and_then(|w| w.location().search().ok()).unwrap_or_default()
 }
 
+fn mobile_layout() -> bool {
+    let Some(window) = web_sys::window() else { return false };
+    let width = window.inner_width().ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let height = window.inner_height().ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let coarse = window.match_media("(pointer: coarse)").ok().flatten().is_some_and(|m| m.matches());
+    crate::mobile::enabled(&query(), width, height, coarse)
+}
+
+/// Mobile Safari can resize only the visual viewport when its keyboard opens.
+/// Size the canvas's container too, so eframe's ResizeObserver keeps controls visible.
+fn follow_visual_viewport() {
+    use wasm_bindgen::closure::Closure;
+    let Some(window) = web_sys::window() else { return };
+    let Some(viewport) = window.visual_viewport() else { return };
+    let resize = move || {
+        let Some(window) = web_sys::window() else { return };
+        let Some(viewport) = window.visual_viewport() else { return };
+        // Browser zoom belongs to the user. Do not resize the app around a magnified view.
+        if (viewport.scale() - 1.0).abs() > 0.01 {
+            return;
+        }
+        let height = viewport.height();
+        if height.is_finite()
+            && height > 0.0
+            && let Some(body) = window.document().and_then(|d| d.body())
+        {
+            let _ = body.style().set_property("--photocraft-height", &format!("{height}px"));
+        }
+    };
+    resize();
+    let callback = Closure::<dyn FnMut()>::new(resize);
+    if viewport.add_event_listener_with_callback("resize", callback.as_ref().unchecked_ref()).is_ok() {
+        callback.forget(); // One listener for the lifetime of this page.
+    }
+}
+
 /// Reads the served font manifest, if the host has one, and lists its families in the font menus.
 fn load_font_manifest(served: Served, ctx: egui::Context) {
     wasm_bindgen_futures::spawn_local(async move {
@@ -415,6 +453,7 @@ impl WebShell {
 
 impl eframe::App for WebShell {
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        self.app.ui.mobile.enabled = mobile_layout();
         // A tap reaches eframe as Pointer Events and Touch Events: keep one press per tap, or the
         // twin press closes the menu the first one opened (#2095).
         photocraft_ui_egui::touch_twins::drop_twins(ctx, raw_input);
