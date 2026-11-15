@@ -37,7 +37,7 @@ photocraft-formats = { workspace = true }
 craft-psd = { workspace = true }
 egui = { workspace = true }
 egui_extras = { version = "0.37", default-features = false, features = ["svg"] }
-eframe = { workspace = true, features = ["wgpu", "accesskit", "clipboard"] }
+eframe = { workspace = true, features = ["wgpu", "clipboard"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
@@ -50,6 +50,11 @@ base64 = "0.23"
 # Inflating egui's default fonts, stored deflated (build.rs, `text/egui_fonts.rs`); already linked through photocraft-io.
 flate2 = { workspace = true }
 web-time = { workspace = true }
+
+# AccessKit's Android backend requires GameActivity; the APK uses NativeActivity.
+# Preserve accessibility on the existing desktop and web targets.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+eframe = { workspace = true, features = ["accesskit"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # Floating panels open in their own OS windows on the desktop; the web keeps them in the page.

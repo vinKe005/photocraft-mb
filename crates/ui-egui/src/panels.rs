@@ -48,6 +48,7 @@ mod layers_empty_menu;
 pub mod layers_panel_ui;
 pub(super) mod mask_props_ui;
 pub mod mask_thumbs_ui;
+pub mod mobile;
 mod navigator;
 pub(crate) mod options_bar;
 pub(super) mod panel_docking;

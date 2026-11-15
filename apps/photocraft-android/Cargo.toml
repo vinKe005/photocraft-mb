@@ -1,0 +1,76 @@
+[package]
+name = "photocraft-android"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Experimental native Android host for PhotoCraft"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# The approved entry-point export needs a scoped allow, which cannot override forbid.
+# Every other item in this app still denies unsafe; all other crates keep workspace forbid.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+cognitive_complexity = "deny"
+too_many_arguments = "deny"
+wildcard_imports = "deny"
+dbg_macro = "warn"
+todo = "warn"
+
+[target.'cfg(target_os = "android")'.dependencies]
+egui = { workspace = true }
+eframe = { workspace = true, features = ["wgpu", "android-native-activity"] }
+winit = { version = "=0.30.13", default-features = false, features = ["android-native-activity", "rwh_06"] }
+photocraft-engine = { workspace = true }
+photocraft-ui-egui = { workspace = true }
+photocraft-io = { workspace = true }
+photocraft-format = { workspace = true }
+# MIT: safe access to the activity/JNI context already initialized by android-activity.
+robius-android-env = "=0.2.0"
+jni = "=0.21.1"
+
+[package.metadata.android]
+package = "io.github.vinke005.photocraft"
+apk_name = "photocraft-android"
+build_targets = ["aarch64-linux-android"]
+
+[package.metadata.android.sdk]
+min_sdk_version = 29
+target_sdk_version = 35
+
+[package.metadata.android.application]
+label = "PhotoCraft Mobile"
+
+[package.metadata.android.application.activity]
+exported = true
+# android-activity supports one NativeActivity per process.
+launch_mode = "singleTask"
+config_changes = "orientation|screenSize|screenLayout|keyboardHidden|density|uiMode"
+
+[[package.metadata.android.application.activity.intent_filter]]
+actions = ["android.intent.action.MAIN"]
+categories = ["android.intent.category.LAUNCHER"]
+
+[[package.metadata.android.application.activity.intent_filter]]
+actions = ["android.intent.action.VIEW"]
+categories = ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"]
+data = [{ mime_type = "image/*", scheme = "content" }]
+
+[[package.metadata.android.application.activity.intent_filter]]
+actions = ["android.intent.action.SEND"]
+categories = ["android.intent.category.DEFAULT"]
+data = [{ mime_type = "image/*" }]
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.READ_EXTERNAL_STORAGE"
+max_sdk_version = 32
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.READ_MEDIA_IMAGES"
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"

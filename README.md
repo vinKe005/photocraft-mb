@@ -466,3 +466,8 @@ Forks and modified versions must remove them.
 ## Star history
 
 [![Star History Chart](https://api.star-history.com/svg?repos=storytold/photocraft&type=Date&legend=top-left)](https://www.star-history.com/?repos=storytold%2Fphotocraft&type=date&legend=top-left)
+
+## Experimental Android fork
+
+This fork includes an experimental native Android APK target. See
+[Android build instructions and current limitations](docs/android-port.md).

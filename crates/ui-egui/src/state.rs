@@ -273,6 +273,9 @@ pub struct DocWindow {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UiState {
+    /// Android sheet visibility; desktop panel preferences are independent.
+    #[serde(default, skip_serializing_if = "crate::panels::mobile::MobileUi::is_default")]
+    pub mobile: crate::panels::mobile::MobileUi,
     pub tool: Tool,
     /// The tools used so far, most recent first and each one once. The first tool of a shortcut
     /// group (the tools sharing a key, [`Tool::key`]) is the one its key brings back, and the first
@@ -691,6 +694,7 @@ impl Default for UiState {
             shape_box: None,
             selected_path: None,
             hidden_work_path: None,
+            mobile: Default::default(),
             panels: Panels::default(),
             views: Vec::new(),
             dialogs: Vec::new(),
