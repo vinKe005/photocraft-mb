@@ -304,7 +304,8 @@ impl PhotocraftApp {
         }
         // Home is only the menu bar and the Home content; the saved panel prefs are untouched.
         let home = self.home_screen_up();
-        if ((!mobile && chrome && self.ui.panels.options_bar) || (!mobile && tabbed_in) || (mobile && self.ui.mobile.options_open)) && !home {
+        let options_shown = if mobile { (chrome || tabbed_in) && self.ui.mobile.options_open } else { (chrome && self.ui.panels.options_bar) || tabbed_in };
+        if options_shown && !home {
             panels::options_bar(self, ui);
         } else {
             // Its Fill help modal is gone with the bar: do not let a stale flag hold the crop's keys.

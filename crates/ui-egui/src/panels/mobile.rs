@@ -27,11 +27,11 @@ pub fn layer_sheet_height(height: f32) -> f32 {
 }
 
 fn command(app: &mut PhotocraftApp, ui: &mut egui::Ui, label: &str, id: &str) {
-    if ui.add_sized([TOUCH_TARGET, TOUCH_TARGET], egui::Button::new(label)).clicked() {
-        if let Err(error) = app.run(id, json!({})) {
-            app.ui.status = error;
-            app.ui.status_error = true;
-        }
+    if ui.add_sized([TOUCH_TARGET, TOUCH_TARGET], egui::Button::new(label)).clicked()
+        && let Err(error) = app.run(id, json!({}))
+    {
+        app.ui.status = error;
+        app.ui.status_error = true;
     }
 }
 

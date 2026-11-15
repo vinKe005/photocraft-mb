@@ -44,6 +44,8 @@ target_sdk_version = 35
 
 [package.metadata.android.application]
 label = "PhotoCraft Mobile"
+# Debug APKs are zip-aligned to 4 bytes; extract the 16 KiB-aligned ELF before loading.
+extract_native_libs = true
 
 [package.metadata.android.application.activity]
 exported = true

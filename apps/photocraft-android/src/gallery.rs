@@ -61,8 +61,8 @@ impl eframe::App for Host {
         }
         let mut choice = None;
         let mut cancel = false;
-        let response = egui::Modal::new(egui::Id::new("android_photos")).show(ui.ctx(), |ui| {
-            ui.set_max_width((ui.ctx().content_rect().width() - 32.0).max(0.0).min(480.0));
+        let response = egui::Modal::new(egui::Id::unique("android_photos")).show(ui.ctx(), |ui| {
+            ui.set_max_width((ui.ctx().content_rect().width() - 32.0).clamp(0.0, 480.0));
             ui.spacing_mut().interact_size.y = 48.0;
             ui.heading("Fotos");
             ui.label("Selecione uma foto para editar.");
@@ -97,26 +97,25 @@ impl eframe::App for Host {
             if let Some((_, reply)) = self.pending.borrow_mut().take() {
                 reply.send(None);
             }
-        } else if let Some(index) = choice {
-            if let Some(photo) = self.photos.as_ref().and_then(|photos| photos.get(index)) {
-                if let Some((multiple, reply)) = self.pending.borrow_mut().take() {
-                    let uri = photo.uri.clone();
-                    let name = photo.name.clone();
-                    self.editor.ui.status = "Abrindo foto…".into();
-                    // File providers may block: keep the Android event/render thread responsive.
-                    let launched = std::thread::Builder::new().name("photo-import".into()).spawn(move || {
-                        let answer = match content::read_photo(&uri) {
-                            Ok(bytes) if multiple => FileDialogAnswer::ContentsMany(vec![(name, bytes)]),
-                            Ok(bytes) => FileDialogAnswer::Contents(name, bytes),
-                            Err(error) => FileDialogAnswer::Unavailable(error),
-                        };
-                        reply.send(Some(answer));
-                    });
-                    if let Err(error) = launched {
-                        self.editor.ui.status = format!("Não foi possível abrir a foto: {error}");
-                        self.editor.ui.status_error = true;
-                    }
-                }
+        } else if let Some(index) = choice
+            && let Some(photo) = self.photos.as_ref().and_then(|photos| photos.get(index))
+            && let Some((multiple, reply)) = self.pending.borrow_mut().take()
+        {
+            let uri = photo.uri.clone();
+            let name = photo.name.clone();
+            self.editor.ui.status = "Abrindo foto…".into();
+            // File providers may block: keep the Android event/render thread responsive.
+            let launched = std::thread::Builder::new().name("photo-import".into()).spawn(move || {
+                let answer = match content::read_photo(&uri) {
+                    Ok(bytes) if multiple => FileDialogAnswer::ContentsMany(vec![(name, bytes)]),
+                    Ok(bytes) => FileDialogAnswer::Contents(name, bytes),
+                    Err(error) => FileDialogAnswer::Unavailable(error),
+                };
+                reply.send(Some(answer));
+            });
+            if let Err(error) = launched {
+                self.editor.ui.status = format!("Não foi possível abrir a foto: {error}");
+                self.editor.ui.status_error = true;
             }
         }
     }

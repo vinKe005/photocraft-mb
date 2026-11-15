@@ -4,7 +4,7 @@ use photocraft_ui_egui::{UiState, panels::mobile::layer_sheet_height};
 fn layer_sheet_preserves_a_canvas_in_portrait_landscape_and_keyboard_sizes() {
     for height in [0.0, 120.0, 360.0, 800.0, 1400.0] {
         let sheet = layer_sheet_height(height);
-        assert!(sheet >= 0.0 && sheet <= 360.0);
+        assert!((0.0..=360.0).contains(&sheet));
         assert!(sheet <= height * 0.5);
     }
     assert_eq!(layer_sheet_height(f32::NAN), 0.0);

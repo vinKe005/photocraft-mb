@@ -235,7 +235,7 @@ pub(super) fn photos() -> std::result::Result<Option<Vec<Photo>>, String> {
     activity(|env, activity| {
         let version = sdk(env)?;
         let permission = if version >= 33 { "android.permission.READ_MEDIA_IMAGES" } else { "android.permission.READ_EXTERNAL_STORAGE" };
-        if !permitted(env, activity, permission)? && !(version >= 34 && permitted(env, activity, "android.permission.READ_MEDIA_VISUAL_USER_SELECTED")?) {
+        if !(permitted(env, activity, permission)? || (version >= 34 && permitted(env, activity, "android.permission.READ_MEDIA_VISUAL_USER_SELECTED")?)) {
             return Ok(None);
         }
         let resolver = env.call_method(activity, "getContentResolver", "()Landroid/content/ContentResolver;", &[])?.l()?;
