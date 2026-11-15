@@ -15,6 +15,11 @@ fn layer_sheet_preserves_a_canvas_in_portrait_landscape_and_keyboard_sizes() {
 fn mobile_state_roundtrips_without_changing_desktop_panels() {
     let mut state = UiState::default();
     let desktop = state.panels.clone();
+    let legacy = serde_json::to_value(&state).unwrap();
+    assert!(legacy.get("mobile").is_none(), "desktop snapshots keep their existing default shape");
+    let restored_legacy: UiState = serde_json::from_value(legacy).unwrap();
+    assert!(restored_legacy.mobile.is_default());
+    assert_eq!(restored_legacy.panels, desktop);
     state.mobile.layers_open = true;
     state.mobile.options_open = true;
     let serialized = serde_json::to_value(&state).unwrap();

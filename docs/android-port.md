@@ -24,6 +24,16 @@ The debug-signed APK is written under `target/debug/apk/`. Debug signing materia
 stays under the ignored `target/android-user/` directory unless `ANDROID_USER_HOME`
 is explicitly set. Do not use a debug key for a production release.
 
+For distribution, preserve the signed APK and package the accompanying license notices:
+
+```sh
+python3 packaging/android/bundle.py --apk target/debug/apk/photocraft-android.apk \
+  --out target/photocraft-android-distribution.zip
+```
+
+The ZIP compresses the debug APK without modifying its signed bytes. Extract it before
+installing the APK; project and new Android dependency license notices accompany it.
+
 The initial ABI is **arm64-v8a**, with **Android 10 / API 29** or later. The
 application ID is `io.github.vinke005.photocraft`, separate from the upstream desktop
 identifier. The native library is linked for 16 KiB page compatibility.
