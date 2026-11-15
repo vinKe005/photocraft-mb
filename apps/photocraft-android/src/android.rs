@@ -38,6 +38,8 @@ fn android_main(app: AndroidApp) {
                 ..super::storage::services(data.ok_or("Android private storage is unavailable")?)?
             };
             let mut editor = PhotocraftApp::new(Session::new(), services);
+            // Decoding large photos and running filters must not block Android's event loop.
+            editor.background_jobs = true;
             if let Some(state) = &cc.wgpu_render_state {
                 editor.set_wgpu(state.clone());
             }

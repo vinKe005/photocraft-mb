@@ -8,7 +8,10 @@ const MAX_IMPORT_BYTES: usize = 128 * 1024 * 1024;
 
 fn activity<T>(f: impl for<'a, 'b, 'c, 'd> FnOnce(&'a mut JNIEnv<'b>, &'c JObject<'d>) -> Result<T>) -> std::result::Result<T, String> {
     robius_android_env::with_activity(|env, activity| {
-        let result = f(env, activity);
+        // This render/worker thread is permanently attached to the VM. Without a
+        // local frame, repeated permission polling retains JNI references until exit.
+        // Every service returns owned Rust data, so no local handle escapes this frame.
+        let result = env.with_local_frame(64, |env| f(env, activity));
         if result.is_err() {
             // A failed Java call must not poison the next content-provider operation.
             let _ = env.exception_clear();
