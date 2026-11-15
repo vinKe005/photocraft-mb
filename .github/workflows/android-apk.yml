@@ -1,0 +1,91 @@
+name: Android APK
+
+# Fork-only build of the experimental native Android host (apps/photocraft-android). It runs
+# packaging/android/build.sh on a GitHub-hosted runner, which already carries the Android SDK, and
+# uploads the debug-signed arm64 APK plus its license bundle as a workflow artifact.
+#
+# This is not part of PhotoCraft's shared CI (AGENTS.md > CI workflows): keep it out of any pull
+# request to the upstream repository.
+on:
+  push:
+    branches: [android/native-apk]
+    paths:
+      - apps/photocraft-android/**
+      - packaging/android/**
+      - .github/workflows/android-apk.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  # Matches docs/android-port.md: NDK r27c, SDK platform 35, build-tools 35.0.0, cargo-apk 0.10.0.
+  ANDROID_NDK_VERSION: 27.2.12479018
+  CARGO_APK_VERSION: 0.10.0
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: step-security/dtolnay-rust-toolchain@8dd607977d06adf4ed49b190381e74c17a9dd25f # v1.0.0
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android
+
+      - uses: step-security/rust-cache@8871c8ba063416da7c32246932ea6ae08700453e # v2.9.2
+        with:
+          key: android-apk
+          cache-on-failure: true
+
+      - name: Rust version
+        run: |
+          rustc --version
+          cargo --version
+
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?the runner image should provide ANDROID_HOME}"
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          # `yes` exits on SIGPIPE once sdkmanager stops reading, so this pipe is allowed to fail.
+          yes | "$sdkmanager" --licenses > /dev/null || true
+          "$sdkmanager" "platforms;android-35" "build-tools;35.0.0" "ndk;${ANDROID_NDK_VERSION}"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install cargo-apk
+        run: cargo install cargo-apk --locked --version "$CARGO_APK_VERSION"
+
+      - name: Build debug-signed APK
+        run: packaging/android/build.sh
+
+      - name: Bundle APK with license notices
+        run: |
+          set -euo pipefail
+          python3 packaging/android/bundle.py \
+            --apk target/debug/apk/photocraft-android.apk \
+            --out target/photocraft-android-distribution.zip
+
+      - name: Check the APK
+        run: |
+          set -euo pipefail
+          apk=target/debug/apk/photocraft-android.apk
+          ls -l "$apk"
+          sha256sum "$apk"
+          unzip -l "$apk" | grep -E 'AndroidManifest.xml|lib/arm64-v8a/.*\.so'
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: photocraft-android-apk
+          path: |
+            target/debug/apk/photocraft-android.apk
+            target/photocraft-android-distribution.zip
+          if-no-files-found: error
+          retention-days: 30
